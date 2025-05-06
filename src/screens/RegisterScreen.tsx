@@ -1,13 +1,16 @@
 // app/RegisterScreen.tsx
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useState } from 'react';
-import { Picker } from '@react-native-picker/picker';
-import { Ionicons } from '@expo/vector-icons';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { FIREBASE_AUTH } from '../config/firebaseConfig';
-import { FIREBASE_DB } from '../config/firebaseConfig';
-import { useNavigation } from '@react-navigation/native';
 import { doc, setDoc } from 'firebase/firestore';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
+import { useNavigation } from '@react-navigation/native';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { FIREBASE_AUTH, FIREBASE_DB } from '../config/firebaseConfig';
+import { USER_ROLES, UserRole } from '../const/GeneralConst';
+import { createProvider } from '../functions/ProviderFunctions';
+import { createClient } from '../functions/ClientFunction';
+
 
 
 
@@ -22,17 +25,18 @@ export default function RegisterScreen() {
         setLoading(true);
         try {
             const response = await createUserWithEmailAndPassword(FIREBASE_AUTH, email, password);
-            console.log(response);
-
             const userDoc = doc(FIREBASE_DB, 'users', response.user.uid);
-            await setDoc(userDoc, {
-                email: email,
-                role: role,
-                createdAt: new Date()
-            });
+            const userId = response.user.uid;
+            
+            if(role === USER_ROLES.CLIENT){
+                // const newClient = createClient(userId, email);
+                await setDoc(userDoc, createClient(userId, email));
+            }else if(role === USER_ROLES.PROVIDER){
+                // const newProvider = createProvider(userId, email);
+                await setDoc(userDoc, createProvider(userId, email));
+            }
 
-            alert('Пользователь создан. Проверьте почту.');
-            navigation.navigate('Login'); // переход назад
+            navigation.navigate('Login');
         } catch (error: any) {
             console.log(error);
             alert('Sign in failed: ' + error.message);
